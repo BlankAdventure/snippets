@@ -13,7 +13,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sktime.classification.sklearn import RotationForest
 from sktime.transformations.panel.shapelet_transform import ShapeletTransform
 from sktime.classification.compose import ClassifierPipeline
-
+from sktime.classification.distance_based import ProximityTree
 
 
 n_samps = 9
@@ -49,11 +49,16 @@ with plt.style.context(('seaborn-v0_8-whitegrid')):
     for S in stf.get_shapelets():
         plt.plot( S.data.flatten() )
 
+# for RotationForest, we can pass res in directly as 2D DataFrame
 clf = RotationForest(n_estimators=10)
 clf.fit(res, y_train)
-
 yp = clf.predict(stf.transform(x_test))
+print(classification_report(y_test, yp))
 
+# but for ProximityTree we have to convert to numpyflat first...
+clf_ptree = ProximityTree(max_depth=5, n_stump_evaluations=5)
+clf_ptree.fit(res.to_numpy(), y_train)
+yp = clf_ptree.predict(stf.transform(x_test).to_numpy())
 print(classification_report(y_test, yp))
 
 
