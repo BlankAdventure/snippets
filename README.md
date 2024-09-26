@@ -12,4 +12,4 @@
 
 ### Notebooks
 
-A small demo of using UMAP in a generative manner for time series [UMAP Inversion](/umap_inv.ipynb).
+A small demo of using UMAP in a generative manner for time series [UMAP Inversion](/Python/umap_inv.ipynb).
