@@ -8,4 +8,5 @@ Code Snippets!
 | griffinlim.py  | Griffin-Lim algo for time-series recovery from spectrogram (librosa)  |
 | sktime_shapelets.py  | Time-series classification using sktime shapelets (sktime)  |
 | spectrogram.py  | Basic spectrogram generation (direct and via sftf) - some phase-shiting thrown in for fun (scipy)  |
+| threading_demo.py  | Basic multithreading with input and output queues (multiprocessing, threading)  |
 | wavelets.py  | Denoising using wavelets (numpy, skimage)  |
