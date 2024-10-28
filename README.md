@@ -14,4 +14,4 @@
 
 (1) A small demo of using UMAP in a generative manner for time series [UMAP Inversion](/Python/umap_inv.ipynb).
 
-(2) A demo of broadband channel estimation (system inversion) for improving quadrature image rejection [UMAP Inversion](/Python/quadrature.ipynb).
+(2) A demo of broadband channel estimation (system inversion) for improving quadrature image rejection [Quadrature Correction](/Python/quadrature.ipynb).
