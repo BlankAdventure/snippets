@@ -15,3 +15,5 @@
 (1) A small demo of using UMAP in a generative manner for time series [UMAP Inversion](/Python/umap_inv.ipynb).
 
 (2) A demo of broadband channel estimation (system inversion) for improving quadrature image rejection [Quadrature Correction](/Python/quadrature.ipynb).
+
+(3) A neural network for solving the Conway's Game of Life [GOL NN](Python/gol/gol_nn.ipynb).
