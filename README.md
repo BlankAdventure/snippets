@@ -17,3 +17,5 @@
 (2) A demo of broadband channel estimation (system inversion) for improving quadrature image rejection [Quadrature Correction](/Python/quadrature.ipynb).
 
 (3) A neural network for solving the Conway's Game of Life [GOL NN](Python/gol/gol_nn.ipynb).
+
+(4) Feedback Delay Network Demo [FDN](Python/FDN/demo.ipynb).
