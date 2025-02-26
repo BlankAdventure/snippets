@@ -119,41 +119,5 @@ response = client.models.generate_content(
 json_dict = json.loads(response.text)
 pprint.pprint(json_dict)
 
-#%%
-# #%% Unsupervised classification 
-# initial = "Assign each of the following sequences to one of three clusters:\n\n"
-# ICL = unsupervised_prompt(train,initial)
-# prompt = ICL + "\nCLUSTER 1:\nCLUSTER 2:\nCLUSTER 3:\n"
 
-# response = client.models.generate_content(
-#     model="gemini-2.0-flash",
-#     config=types.GenerateContentConfig(temperature=0.1),
-#     contents=prompt
-#     )
-   
 
-# print(response.text)
-
-#%% Supervised learning example, sequence prediction
-# this isn't very interesting for reasons
-
-#prompt = '''CLASS: 0\nSEQUENCE:\n'
-# prompt = '''Predict the sequence  
-# CLASS: 0
-# SEQUENCE:
-
-# CLASS: 1
-# SEQUENCE:
-# '''
-
-# response = client.models.generate_content(
-#     model="gemini-2.0-flash",
-#     config=types.GenerateContentConfig(
-#         system_instruction=ICL),
-#     contents=prompt
-#     )
-    
-
-# print(response.text)
-
-#test = [float(s) for s in response.text.split(',')]
