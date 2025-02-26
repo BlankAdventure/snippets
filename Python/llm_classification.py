@@ -17,9 +17,28 @@ from google.genai import types
 api_key = os.environ.get('genai_key')
 client = genai.Client(api_key=api_key)
 
+# Helper function for stringifying a list of floats
 seq_enc = lambda v: ','.join([f'{x:.2f}' for x in v])+'\n' 
 
-def supervised_prompt(d, prompt = ''):    
+class Flat(TypedDict):
+    """ Flat-style dictionary for holding curves and their labels """
+    
+    data: list|tuple
+    targs: list|tuple
+    
+
+def supervised_prompt(d: Flat, prompt: str = '') -> str:
+    """
+    Generate a supervised prompt of the form:
+        
+    '''
+    SEQUENCE: <sequence>
+    CLASS: <class>
+    '''
+    
+    Returns the prompt string.
+    """    
+    
     for data, targ in zip(d['data'],d['targs']  ):
         prompt += 'SEQUENCE: ' + seq_enc(data)
         prompt += f'CLASS: {targ}\n'
