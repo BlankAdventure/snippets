@@ -106,7 +106,7 @@ def get_data(train_samples:int=5, test_samples:int=2, pnts:int=64, steps:int=2, 
 
     """
     
-    clean, noisy, targs, unseen = load_data('vae_test.npy')
+    clean, noisy, targs, unseen = load_data('../vae_test.npy')
     grouped = {key: [value[0:pnts:steps] for value, group in zip(noisy, targs) if group == key] for key in set(targs)}    
     
     train_list = []

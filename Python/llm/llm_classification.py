@@ -10,8 +10,8 @@ import json
 import pprint
 from google import genai
 from google.genai import types
-from llm import llm_utils
-from llm.llm_utils import supervised_prompt, unsupervised_prompt, plot_group
+import llm_utils
+from llm_utils import supervised_prompt, unsupervised_prompt, plot_group
 
 api_key = os.environ.get('genai_key')
 client = genai.Client(api_key=api_key)
