@@ -21,7 +21,10 @@ train, test = llm_utils.get_data()
 plot_group(llm_utils.group(train))
 
 
-#%% Supervised Learning Example, classification
+
+#%% ********** Supervised Learning Example - Classification **********
+
+
 
 ICL = supervised_prompt(train)
 
@@ -49,7 +52,9 @@ print(f'Input class: {[x[1] for x in examples]}\nReported class: [{", ".join(res
 
 
 
-#%% Unsupervised classification - json
+#%% ********** Unsupervised Learning Example - Clustering Part 1 **********
+# In this example we ask for a JSON response format in the prompt.
+
 initial = """Assign each of the following sequences to 1 of 3 clusters. 
 
 Use the following JSON schema in your response: 
@@ -84,7 +89,10 @@ for entry in json_dict:
 
 plot_group(ai_grouped)
 
-#%% Try with json schema
+#%% ********** Unsupervised Learning Example - Clustering Part 2 **********
+# In this example we supply our JSON schema directly to the model.
+
+
 import typing_extensions as typing
 
 class BaseType(typing.TypedDict):
