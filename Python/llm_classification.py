@@ -179,12 +179,14 @@ plot_dict(ai_groups)
 
 #%% Try with json schema
 from pydantic import BaseModel
+import typing_extensions as typing
 
-class BaseType(BaseModel):
+class BaseType(typing.TypedDict):
     cluster: int
     sequences: list[int]
     explanation: str
-    
+
+
 initial = """Assign each of the following sequences to 1 of 3 clusters."""
 
 prompt = unsupervised_prompt(train)
