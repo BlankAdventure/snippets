@@ -178,7 +178,6 @@ for entry in json_dict:
 plot_dict(ai_groups)
 
 #%% Try with json schema
-from pydantic import BaseModel
 import typing_extensions as typing
 
 class BaseType(typing.TypedDict):
@@ -187,9 +186,12 @@ class BaseType(typing.TypedDict):
     explanation: str
 
 
-initial = """Assign each of the following sequences to 1 of 3 clusters."""
+initial = """You are a machine learning clustering algorithm. 
+Assign each of the following sequences to 1 of 3 clusters:
+    
+"""
 
-prompt = unsupervised_prompt(train)
+prompt = unsupervised_prompt(train, initial)
 
 response = client.models.generate_content(
     model="gemini-2.0-flash",
@@ -197,7 +199,7 @@ response = client.models.generate_content(
             'response_schema': list[BaseType],
             'temperature': 0.3
             },
-    contents=[initial, prompt]
+    contents=[prompt]
     )
 
 print(response.parsed) 
