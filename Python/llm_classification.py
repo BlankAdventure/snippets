@@ -177,5 +177,29 @@ for entry in json_dict:
 
 plot_dict(ai_groups)
 
+#%% Try with json schema
+from pydantic import BaseModel, RootModel
+
+class BaseType(BaseModel):
+    cluster: int
+    sequences: list[int]
+    explanation: str
+    
+class RespType(RootModel):
+    root: list[BaseType]
+
+initial = """Assign each of the following sequences to 1 of 3 clusters."""
+
+prompt = unsupervised_prompt(train)
+
+response = client.models.generate_content(
+    model="gemini-2.0-flash",
+    config={'response_mime_type': 'application/json',
+            'response_schema': RespType,
+            'temperature': 0.3
+            },
+    contents=[initial, prompt]
+    )
 
 
+print( response.parsed.model_dump() )
