@@ -118,3 +118,36 @@ response = client.models.generate_content(
     )
 
 print(response.parsed) 
+
+#%% Estimate number of clusters
+
+initial = """
+Determine an appropriate number of clusters and assign each of the sequences to one of the them.    
+
+Use the following JSON schema in your response: 
+{'cluster': int, 'sequences': list[int], 'explanation': str}
+"""
+
+prompt = unsupervised_prompt(train, initial)
+
+response = client.models.generate_content(
+    model="gemini-2.0-flash",
+    config={            
+            'temperature': 0.3,
+            'response_mime_type': 'application/json'
+            },
+    contents=prompt
+    )
+
+
+
+json_dict = json.loads(response.text)
+ai_grouped = {}
+clrs = [Fore.RED, Fore.BLUE, Fore.GREEN]
+for entry in json_dict:    
+    this_class = entry['cluster']
+    sequences = entry['sequences']
+    ai_grouped[this_class] = [ train[x][0] for x in sequences]    
+    print(clrs[this_class] + f'\nCLASS {this_class}:\n' + entry['explanation'])
+
+plot_group(ai_grouped)
