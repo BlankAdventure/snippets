@@ -23,14 +23,23 @@ def decorator(func):
     def wrapper(*args, **kwargs):        
         bound_args = inspect.signature(func).bind(*args, **kwargs)        
         for key in filtered_dict:
-            bound_args.arguments[key] = bound_args.arguments[key] * 2        
+            bound_args.arguments[key] = modify(bound_args.arguments[key])
         return func(*bound_args.args, **bound_args.kwargs)
     return wrapper
 
 
-@decorator
-def func(a: int, b: Unit, c: Unit = 0):
-    print(f'function called! {a} {b} {c}')
+def modify(x):
+    return 2*x
+
+def func_undec(a: int, b: Unit, c: Unit = 0):
+    b = modify(b)
+    c = modify(c)
+    print(f'func_undec: {a} {b} {c}')
     
-func(1,2,3)
+@decorator
+def func_dec(a: int, b: Unit, c: Unit = 0):
+    print(f'func_dec: {a} {b} {c}')
+    
+func_undec(1,2,3)
+func_dec(1,2,3)
 
