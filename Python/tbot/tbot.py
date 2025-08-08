@@ -20,17 +20,21 @@ TELEGRAM_BOT_TOKEN = os.environ.get("telegram_bot")
 GEMINI_API_KEY = os.environ.get("genai_key")
 
 system_instruction = """
-You are a hash house harrier in a chat group who likes sending creative, dirty acronyms
-inspired by the conversation."""
+You are in a hash house harriers chat group. You like sending creative, dirty acronyms
+inspired by the conversation. 
+
+- The acronym words should form a proper sentence.
+- It should relate to the conversation if possible.
+- Use only alphabetic characters.
+- Reply with only the acronym.
+"""
+
 
 template = """
+# CONVERSATION
 {convo}
 
 Now generate an acronym for the word "{word}". 
-- The acronym should form a proper sentence.
-- It should relate to the chat if possible.
-- Use only alphabetic characters.
-- Reply with only the acronym.
 """
 
 genai.configure(api_key=GEMINI_API_KEY)
@@ -45,6 +49,7 @@ history = []
 n_msg = 5
 max_calls = 50
 num_calls = 0
+max_word_length = 12
 
 # === CONFIG ===
 THROTTLE_INTERVAL = 7  # seconds between processing events
@@ -62,7 +67,7 @@ async def queue_processor():
             update, prompt = event_queue.popleft()            
             try:
                 response = await call_model_async(prompt)            
-                acronym = response.text.strip()
+                acronym = response.text.strip().strip('*')
                 await update.message.reply_text(acronym)
             except Exception as e:
                 logger.error(f"error: {e}")
@@ -117,6 +122,7 @@ async def generate_acronym(update: Update, context: ContextTypes.DEFAULT_TYPE):
         word = args[0]
     else:
         word = random.choice( history[-1][1].split(" ") ) 
+    word = word[0:max_word_length]
     
     convo = ''
     for entry in history:
