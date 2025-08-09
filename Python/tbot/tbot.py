@@ -1,169 +1,161 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Aug  7 19:54:58 2025
+Created on Fri Aug  8 21:39:33 2025
 
 @author: BlankAdventure
 """
-import asyncio
 
-
-from collections import deque
 import os
 import random
-
 import logging
+import asyncio
+from collections import deque
+from typing import Deque
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters,
+)
 import google.generativeai as genai
+from google.generativeai.types import GenerationConfig
 
+
+
+# === CONFIGURATION ===
 TELEGRAM_BOT_TOKEN = os.environ.get("telegram_bot")
 GEMINI_API_KEY = os.environ.get("genai_key")
 
-system_instruction = """
-You are in a hash house harriers chat group. You like sending creative, dirty acronyms inspired by the conversation. 
+TEMPERATURE = 1.1
+MAX_HISTORY = 6
+MAX_CALLS = 50
+MAX_WORD_LENGTH = 12
+THROTTLE_INTERVAL = 7  # seconds
 
-- The acronym words should form a proper sentence.
-- It should relate to the conversation if possible.
+SYSTEM_INSTRUCTION = """
+You are in a hash house harriers chat group. You like sending creative, dirty acronyms inspired by the conversation.
+
+- The acronym words must form a proper sentence.
+- THe sentence should relate to the conversation if possible.
 - Use only alphabetic characters.
-- Reply with only the acronym.
-
+- Reply with only the sentence.
 """
 
-
-template = """
+PROMPT_TEMPLATE = """
 # CONVERSATION
 {convo}
 
-Now generate an acronym for the word "{word}". 
+Now generate an acronym for the word "{word}".
 """
 
+# === SETUP ===
+generation_config = GenerationConfig(temperature=TEMPERATURE)
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-2.5-flash',system_instruction=system_instruction)
+model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=SYSTEM_INSTRUCTION)
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-history = []
-n_msg = 5
-max_calls = 50
-num_calls = 0
-max_word_length = 12
+class BotState:
+    def __init__(self):
+        self.event_queue: Deque[tuple[any,any]] = deque()
+        self.queue_event: asyncio.Event = asyncio.Event()
+        self.history: list = []
+        self.call_count: int = 0
 
-# === CONFIG ===
-THROTTLE_INTERVAL = 7  # seconds between processing events
+state = BotState()
 
-# === QUEUE SETUP ===
-event_queue = deque()
-queue_event = asyncio.Event()
-
+# === QUEUE PROCESSOR ===
 async def queue_processor():
     while True:
-        if not event_queue:
-            queue_event.clear()
-            await queue_event.wait()
-        if event_queue:            
-            update, prompt = event_queue.popleft()            
+        if not state.event_queue:
+            state.queue_event.clear()
+            await state.queue_event.wait()
+
+        if state.event_queue:
+            update, prompt = state.event_queue.popleft()
             try:
-                response = await call_model_async(prompt)            
-                acronym = response.text.strip().strip('*')
-                await update.message.reply_text(acronym)
+                response = await asyncio.to_thread(model.generate_content, 
+                                                   prompt,
+                                                   generation_config=generation_config)                
+                await update.message.reply_text(response.text.strip())
             except Exception as e:
-                logger.error(f"error: {e}")
-                await update.message.reply_text("Dammit you broke something")                
-            await asyncio.sleep(THROTTLE_INTERVAL)  # throttle interval
+                logger.error(f"Model error: {e}")
+                await update.message.reply_text("Dammit you broke something")
 
-async def queue(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print (f'Q-len: {len(event_queue)} | num_calls: {num_calls}')
+            await asyncio.sleep(THROTTLE_INTERVAL)
 
+
+# === COMMAND HANDLERS ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hi, I'm an acrobot. A for an acronym by typing: /acro WORD")
+    await update.message.reply_text("Hi, I'm Acrobot. Use /acro WORD to generate an acronym.")
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global history
+async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Chat History:\n" + "\n".join(f"{u}: {m}" for u, m in state.history))
+    logger.info(f"Queue length: {len(state.event_queue)} | API calls: {state.call_count}")
+    await update.message.reply_text(
+        f"Queue length: {len(state.event_queue)} | API calls: {state.call_count}"
+    )
 
-    user = update.message.from_user
-    username = user.username
-    first_name = user.first_name
-    last_name = user.last_name
-
-    message = update.message.text
-
-    history.append( ( username or first_name or last_name or "", message)  )
-    history = history[-n_msg:]    
-
-    
-async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(history)
 
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    args = context.args    
-    text = " ".join(context.args[1:])    
-    history.append( (args[0],text) )    
+    if len(context.args) < 2:
+        await update.message.reply_text("Usage: /add username message")
+        return
 
-async def call_model_async(prompt):
-    return await asyncio.to_thread(model.generate_content, prompt)
-    #def blocking_function():
-    #    result = model.generate_content(prompt)
-    #    return result
-    #result = await asyncio.to_thread(blocking_function)
-    #return result
-
-#async def process_async(data):
-#    return await asyncio.to_thread(long_running, data)
+    username, message = context.args[0], " ".join(context.args[1:])
+    state.history.append((username, message))
+    state.history = state.history[-MAX_HISTORY:]
+    await update.message.reply_text("Message added.")
 
 
+# === MESSAGE HANDLER ===
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.message.from_user
+    sender = user.username or user.first_name or user.last_name or "Unknown"
+    message = update.message.text
+
+    state.history.append((sender, message))
+    state.history = state.history[-MAX_HISTORY:]
+
+
+# === ACRONYM GENERATOR ===
 async def generate_acronym(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global num_calls
-    
-    args = context.args
-    if args:
-        word = args[0]
-    else:
-        word = random.choice( history[-1][1].split(" ") ) 
-    word = word[0:max_word_length]
-    
-    convo = ''
-    for entry in history:
-        convo += entry[0] + ": " + entry[1] + "\n"
-        
-    prompt = template.format(convo=convo, word=word) 
-
-    if num_calls < max_calls:
-        event_queue.append((update, prompt))
-        queue_event.set()  # signal the queue processor
-        num_calls += 1
-    else:
+    if state.call_count >= MAX_CALLS:
         await update.message.reply_text("No more! You're wasting my precious tokens!")
+        return
 
+    word = context.args[0] if context.args else random.choice(
+        state.history[-1][1].split()
+    )
+    word = word[:MAX_WORD_LENGTH]
+
+    convo = "\n".join(f"{u}: {m}" for u, m in state.history)
+    prompt = PROMPT_TEMPLATE.format(convo=convo, word=word)
+
+    state.event_queue.append((update, prompt))
+    state.queue_event.set()
+    state.call_count += 1
+
+
+# === MAIN FUNCTION ===
 def main():
     loop = asyncio.get_event_loop()
     loop.create_task(queue_processor())
-    
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
-    
-    app.add_handler(CommandHandler("queue", queue))
+
+    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()    
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("acro", generate_acronym))
-    app.add_handler(CommandHandler("show", show))
+    app.add_handler(CommandHandler("info", info))    
     app.add_handler(CommandHandler("add", add))
+    app.add_handler(CommandHandler("acro", generate_acronym))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     logger.info("Bot is running...")
     app.run_polling()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
-
-
-
-
-#     prompt = f"""
-# You are a creative acronym generator.
-
-# The user previously said: {memory}
-
-# Now, generate a creative acronym for the word "{word}". 
-# Make sure it makes sense and connects with previous messages if possible.
-# """
