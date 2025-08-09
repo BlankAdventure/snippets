@@ -41,6 +41,7 @@ You are in a hash house harriers chat group. You like sending creative, dirty ac
 - THe sentence should relate to the conversation if possible.
 - Use only alphabetic characters.
 - Reply with only the sentence.
+
 """
 
 PROMPT_TEMPLATE = """
