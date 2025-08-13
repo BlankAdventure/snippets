@@ -28,6 +28,7 @@ from google.generativeai.types import GenerationConfig
 TELEGRAM_BOT_TOKEN = os.environ.get("telegram_bot")
 GEMINI_API_KEY = os.environ.get("genai_key")
 
+
 TEMPERATURE = 1.1
 MAX_HISTORY = 6
 MAX_CALLS = 50
@@ -62,15 +63,18 @@ logger = logging.getLogger(__name__)
 
 class BotState:
     def __init__(self):
-        self.event_queue: Deque[tuple[any,any]] = deque()
+        self.event_queue: Deque[tuple[Update,str]] = deque()
         self.queue_event: asyncio.Event = asyncio.Event()
         self.history: list = []
         self.call_count: int = 0
 
 state = BotState()
 
-# === QUEUE PROCESSOR ===
-async def queue_processor():
+
+async def queue_processor() -> None:
+    '''
+    Async loop for throttling and processing acronym requests.
+    '''
     while True:
         if not state.event_queue:
             state.queue_event.clear()
@@ -82,39 +86,51 @@ async def queue_processor():
                 response = await asyncio.to_thread(model.generate_content, 
                                                    prompt,
                                                    generation_config=generation_config)                
-                await update.message.reply_text(response.text.strip())
+                if update.message: await update.message.reply_text(response.text.strip())
             except Exception as e:
                 logger.error(f"Model error: {e}")
-                await update.message.reply_text("Dammit you broke something")
-
+                if update.message: await update.message.reply_text("Dammit you broke something")
             await asyncio.sleep(THROTTLE_INTERVAL)
 
 
 # === COMMAND HANDLERS ===
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hi, I'm Acrobot. Use /acro WORD to generate an acronym.")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    '''
+    Posts an introduction message to the chat.        
+    '''
+    if update.message: await update.message.reply_text("Hi, I'm Acrobot. Use /acro WORD to generate an acronym.")
 
-async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    '''
+    Relays info about the state of the bot.        
+    '''
     logger.info("Chat History:\n" + "\n".join(f"{u}: {m}" for u, m in state.history))
     logger.info(f"Queue length: {len(state.event_queue)} | API calls: {state.call_count}")
-    await update.message.reply_text(
+    if update.message: await update.message.reply_text(
         f"Queue length: {len(state.event_queue)} | API calls: {state.call_count}"
     )
 
 
-async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if len(context.args) < 2:
-        await update.message.reply_text("Usage: /add username message")
+async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    '''
+    Manually add a new message to the chat history.
+    '''
+    if context.args is None or len(context.args) < 2:
+        if update.message: await update.message.reply_text("Usage: /add username message")
         return
 
     username, message = context.args[0], " ".join(context.args[1:])
     state.history.append((username, message))
     state.history = state.history[-MAX_HISTORY:]
-    await update.message.reply_text("Message added.")
+    if update.message: await update.message.reply_text("Message added.")
 
-
-# === MESSAGE HANDLER ===
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    '''
+    Adds new chat messages to the history.
+    '''
+    if not update.message or not update.message.from_user:
+        return
+    
     user = update.message.from_user
     sender = user.username or user.first_name or user.last_name or "Unknown"
     message = update.message.text
@@ -122,11 +138,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state.history.append((sender, message))
     state.history = state.history[-MAX_HISTORY:]
 
+async def generate_acronym(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    '''
+    Generates a new acronym and posts it in the chat.
+    '''
 
-# === ACRONYM GENERATOR ===
-async def generate_acronym(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if state.call_count >= MAX_CALLS:
-        await update.message.reply_text("No more! You're wasting my precious tokens!")
+        if update.message: await update.message.reply_text("No more! You're wasting my precious tokens!")
         return
 
     word = context.args[0] if context.args else random.choice(
@@ -143,7 +161,12 @@ async def generate_acronym(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # === MAIN FUNCTION ===
-def main():
+def main() -> None:
+    if not TELEGRAM_BOT_TOKEN:
+        raise ValueError("TELEGRAM_BOT_TOKEN environment variable not set.")
+    if not GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY environment variable not set.")
+    
     loop = asyncio.get_event_loop()
     loop.create_task(queue_processor())
 
