@@ -114,9 +114,10 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     '''
     Manually add a new message to the chat history.
+    Usage: /add username add this message!
     '''
     if context.args is None or len(context.args) < 2:
-        if update.message: await update.message.reply_text("Usage: /add username message")
+        if update.message: await update.message.reply_text("Usage: /add username add this message!")
         return
 
     username, message = context.args[0], " ".join(context.args[1:])
@@ -126,7 +127,7 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     '''
-    Adds new chat messages to the history.
+    Automatically adds new chat messages to the history.
     '''
     if not update.message or not update.message.from_user:
         return
@@ -140,7 +141,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def generate_acronym(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     '''
-    Generates a new acronym and posts it in the chat.
+    Generates a new acronym and posts it in the chat. If no word is specified
+    it will pick at random from the last message.
     '''
 
     if state.call_count >= MAX_CALLS:
