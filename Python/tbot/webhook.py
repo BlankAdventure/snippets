@@ -3,23 +3,26 @@
 Created on Sat Aug 16 13:45:53 2025
 
 @author: BlankAdventure
+
+Run acrobot in webhook mode. This requires launching a server to handle post
+requests sent from telegram to the specified webhook address.
 """
 
+import os
 import acrobot
 import uvicorn
+import argparse
 from telegram import Update
 from http import HTTPStatus
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
-import argparse
 
 parser = argparse.ArgumentParser()
-
 parser.add_argument('-p', help='server port (listening)',type=int)
 parser.add_argument('-a', help='server IP address (listening)',type=str)
 parser.add_argument('-w', help='webhook URL', default=None,type=str)
 args = parser.parse_args()
-webhook_url =  args.w 
+webhook_url = args.w or os.getenv('webhook_url') or None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

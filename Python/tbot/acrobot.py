@@ -68,13 +68,7 @@ class BotState:
 
 state = BotState()
 
-async def threadq():
-    while True:
-        if len(state.event_queue) > 0:
-            update, prompt = state.event_queue.popleft()
-            response = model.generate_content(prompt, generation_config=generation_config)
-            await update.message.reply_text(response.text.strip())
-            
+
 async def queue_processor() -> None:
     '''
     Async loop for throttling and processing acronym requests.
