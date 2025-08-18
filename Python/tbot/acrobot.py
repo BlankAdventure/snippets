@@ -15,6 +15,7 @@ from telegram import Update
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
 from telegram.ext import (
+    Application,
     ApplicationBuilder,
     CommandHandler,
     MessageHandler,
@@ -92,7 +93,7 @@ async def queue_processor() -> None:
 
 
 # === COMMAND HANDLERS ===
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     '''
     Posts an introduction message to the chat.        
     '''
@@ -123,7 +124,7 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     state.history = state.history[-MAX_HISTORY:]
     if update.message: await update.message.reply_text("Message added.")
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     '''
     Automatically adds new chat messages to the history.
     '''
@@ -159,7 +160,7 @@ async def generate_acronym(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     state.queue_event.set()
     state.call_count += 1
 
-def bot_builder():
+def bot_builder() -> Application:
     '''
     Builds the telegram bot object and adds the callback functions.
     '''
