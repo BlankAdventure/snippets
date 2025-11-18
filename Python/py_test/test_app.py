@@ -1,92 +1,55 @@
 # test_app.py
-from unittest.mock import Mock
 from app import (
     UserRegistration,
-    WeatherService, WeatherReporter,    
-    InMemoryUserRepository,
-    EmailSender, Notifier,
-    PaymentGateway, PaymentProcessor
+    WeatherReporter,
+    Notifier,
+    PaymentProcessor
 )
 
 # ----------------------------
-# 1. Dummy Example Test
+# 1. Dummy Example
 # ----------------------------
-
-
-class DummyEmailService:
-    """Never used — only satisfies __init__ requirement."""
-    pass
-
-
-def test_dummy_example():
-    dummy = DummyEmailService()
-    reg = UserRegistration(dummy)
-
+def test_dummy(dummy_email_service):
+    reg = UserRegistration(dummy_email_service)
     assert reg.register("alice") == "alice registered"
 
 
 # ----------------------------
-# 2. Stub Example Test
+# 2. Stub Example
 # ----------------------------
-
-class WeatherServiceStub(WeatherService):
-    def get_temperature(self, city):
-        return 20  # fixed output
-
-
-def test_stub_example():
-    stub = WeatherServiceStub()
-    reporter = WeatherReporter(stub)
-
+def test_stub(weather_stub):
+    reporter = WeatherReporter(weather_stub)
     assert reporter.report("Paris") == "Paris: 20°C"
 
 
 # ----------------------------
-# 3. Fake Example Test
+# 3. Fake Example
 # ----------------------------
-
-def test_fake_example():
-    repo = InMemoryUserRepository()
-    repo.save("alice")
-    repo.save("bob")
-
-    assert repo.get_all() == ["alice", "bob"]
+def test_fake(fake_user_repo):
+    fake_user_repo.save("alice")
+    fake_user_repo.save("bob")
+    assert fake_user_repo.get_all() == ["alice", "bob"]
 
 
 # ----------------------------
-# 4. Spy Example Test
+# 4. Spy Example
 # ----------------------------
-
-class EmailSenderSpy(EmailSender):
-    def __init__(self):
-        self.sent = []
-
-    def send(self, to, subject, body):
-        self.sent.append((to, subject, body))
-
-
-def test_spy_example():
-    spy = EmailSenderSpy()
-    notifier = Notifier(spy)
-
+def test_spy(email_spy):
+    notifier = Notifier(email_spy)
     notifier.notify("alice@example.com")
 
-    assert spy.sent == [
+    assert email_spy.sent == [
         ("alice@example.com", "Hello", "Welcome!")
     ]
 
 
 # ----------------------------
-# 5. Mock Example Test
+# 5. Mock Example
 # ----------------------------
-
-def test_mock_example():
-    gateway_mock = Mock(spec=PaymentGateway)
-    gateway_mock.pay.return_value = "ok"
-
-    processor = PaymentProcessor(gateway_mock)
+def test_mock(payment_gateway_mock):
+    processor = PaymentProcessor(payment_gateway_mock)
 
     result = processor.charge(100)
 
     assert result == "ok"
-    gateway_mock.pay.assert_called_once_with(100)
+    payment_gateway_mock.pay.assert_called_once_with(100)
