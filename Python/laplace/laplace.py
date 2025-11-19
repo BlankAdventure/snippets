@@ -29,7 +29,7 @@ t = np.linspace(0, time_dur, time_points)
 
 
 # Data sources
-s_source = ColumnDataSource(data=dict(x=[init_r], y=[init_i], label=[]))
+s_source = ColumnDataSource(data=dict(x=[init_r], y=[init_i], label=[None]))
 real_source = ColumnDataSource(data=dict(t=t, y=np.zeros_like(t)))
 imag_source = ColumnDataSource(data=dict(t=t, y=np.zeros_like(t)))
 traj_source = ColumnDataSource(data=dict(x=[],y=[]))
